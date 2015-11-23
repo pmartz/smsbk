@@ -1,0 +1,157 @@
+#/bin/bash
+
+# smsre <filename> [-o <outdir>]
+
+# Config variables:
+outputdir=/mnt/SDrive/pauldeb/backup
+outputtempdir=/smsbktmp
+logfile=$outputdir/smsbk.log
+log=1
+
+# Using 0 for false - no error
+argerr=0
+filename=""
+outdir=""
+
+# Log the invocation.
+if [ $log = 1 ]
+then
+    echo `date +%F-%R`", smsre $@" >> $logfile
+fi
+
+case "$#" in
+1)
+    filename="$1"
+    ;;
+3)
+    filename="$1"
+    outdir="$3"
+    # [ "$2" = "-o" ] returns 0 if true ("no error").
+    #   if anything other than "-o", returns 1 ("error").
+    [ "$2" = "-o" ] ; argerr=$?
+    ;;
+*)
+    # Set to 1 for error.
+    argerr=1
+    ;;
+esac
+
+if [ !$argerr ]
+then
+    if [ ! -e "$filename" ]
+    then
+        errmsg="Error: Input backup file $filename does not exist."
+        echo $errmsg
+        argerr=1
+        if [ $log = 1 ]
+        then
+            echo $errmsg >> $logfile
+        fi
+    fi
+fi
+
+if [ $argerr = 1 ]
+then
+    echo "Usage: smsre <filename> [-o <outdir>]"
+    echo "If 'outdir' not specified, files will be restored to their"
+    echo "original location."
+    if [ $log = 1 ]
+    then
+        echo "Exiting." >> $logfile
+        echo "-----" >> $logfile
+    fi
+    exit 1
+fi
+
+# Make sure local output temp dir exists
+if [ ! -d $outputtempdir ]
+then
+    errmsg="Error: $outputtempdir does not exist."
+    echo $errmsg
+    if [ $log = 1 ]
+    then
+        echo $errmsg >> $logfile
+        echo "-----" >> $logfile
+    fi
+    exit 1
+endif
+
+# Generate output file name if necessary.
+#   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-dashes>.tar.gz
+if [ "$outdir" = "" ]
+then
+    # Get rid of path
+    nameonly=`basename $filename`
+
+    # Assume $nameonly contains original path with '-' instead of '/'
+    #
+    # First, extract that hyphenated path from the file name.
+    #
+    # Regular expression:
+    #   Match ^ (start of line), [-0-9]* (all numbers and hyphens; date and
+    #   time), _SMSBK_ (the string "_SMSBK_"), \([^\.]*\) (any characters
+    #   other than periods and assign to \1), .*$ (all subsequent characters
+    #   including end of line anchor.
+    tempdir=`echo $nameonly | sed 's/^[-0-9]*_SMSBK_\([^\.]*\).*$/\1/'`
+    sedresult=$?
+
+    if [ $sedresult = 0 ]
+    then
+        # Now, replace '-' with '/'
+        outdir=`echo $tempdir | sed sx-x/xg`
+        sedresult=$?
+    fi
+
+    if [ $sedresult != 0 ]
+    then
+        warnmsg="Warning: Could not determine output directory from filename. Using cwd."
+        echo $warnmsg
+        if [ $log = 1 ]
+        then
+            echo $warnmsg >> $logfile
+        fi
+        outdir="."
+    fi
+fi
+
+if [ ! -d $outdir ]
+then
+    errmsg="Error: Output directory $outdir does not exist. Create it first."
+    echo $errmsg
+    if [ $log = 1 ]
+    then
+        echo $errmsg >> $logfile
+        echo "-----" >> $logfile
+    fi
+    exit 1
+fi
+
+# Copy backup file to local temp directory
+cp $filename $outputtempdir
+localfile=$outputtempdir/`basename $filename`
+
+if [ $log = 1 ]
+then
+    echo "Restoring: $filename" >> $logfile
+    echo "  Using temp location $localfile" >> $logfile
+    echo "  Writing output to: $outdir" >> $logfile
+fi
+
+
+# Perform the tar operation
+tar -xpzf $localfile --keep-newer-files -C $outdir
+tarstatus=$?
+rm $localfile
+
+if [ $log = 1 ]
+then
+    if [ $tarstatus = 0 ]
+    then
+        echo `date +%F-%R`", Exiting normally." >> $logfile
+    else
+        echo `date +%F-%R`", Exiting with error $tarstatus." >> $logfile
+    fi
+    echo "-----" >> $logfile
+fi
+
+exit 0

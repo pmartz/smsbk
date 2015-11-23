@@ -1,0 +1,46 @@
+.TH SMSBK 1
+.SH NAME
+smsbk \- Create backup tarball for a directory.
+.SH SYNOPSIS
+.B smsbk
+\fIDIRNAME\fR
+[\fB\-o\fR \fIOUTFILE\fR]
+.SH DESCRIPTION
+.PP
+Invokes
+.BR tar (1)
+with compression on the specified \fIDIRNAME\fR directory.
+.PP
+If \fIOUTFILE\fR is not specified, the output tarball filename
+is automatically generated. The automatically generated name can be
+used with
+.BR smsre (1)
+with no other command line arguments to restore files to their original
+locations.
+.SH OPTIONS
+.TP
+.BR \fIDIRNAME\fR
+Required. Name of directory to back up. Examples: /, /home/foo, ~, ., ../foo.
+.TP
+.BR \-o " " \fIOUTFILE\fR
+Optional output file name.
+.SH EXAMPLES
+To back up your home directory:
+.PP
+.nf
+.RS
+smsbk /home/pmartz
+.RE
+.fi
+.PP
+This creates TBD.
+.PP
+To back up your entire hard drive:
+.PP
+.nf
+.RS
+smsbk /
+.RE
+.fi
+.PP
+This creates TBD.

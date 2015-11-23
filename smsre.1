@@ -1,0 +1,22 @@
+.TH SMreK 1
+.SH NAME
+smsre \- Restore files from a backup tarball.
+.SH SYNOPSIS
+.B smsre
+\fIFILENAME\fR
+[\fB\-o\fR \fIOUTDIR\fR]
+.SH DESCRIPTION
+.PP
+Invokes
+.BR tar (1)
+to extract tarball contents and restore stored sirectories and their
+contents.
+.PP
+If \fIOUTDIR\fR is not specified,
+.BR smsre (1)
+attempts to restore tarball
+contents to their original locations. This is accomplished by extracting
+the encoded original root directory name from \fIFILENAME\fR. \fIFILENAME\fR
+must be constructed using a specific naming convention, as generated 
+automatically with
+.BR smsbk (1)

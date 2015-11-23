@@ -1,0 +1,140 @@
+#/bin/bash
+
+#
+# smsbk <dirname> [-o <outfile>]
+#
+# To exclude a subdirectory, add the file .smsbk-exclude to that directory.
+#
+
+# Config variables:
+outputdir=/mnt/SDrive/pauldeb/backup
+outputtempdir=/smsbktmp
+excludetag=.smsbk-exclude
+logfile=$outputdir/smsbk.log
+log=1
+
+# Using 0 for false - no error
+argerr=0
+dirname=""
+outfile=""
+
+# Log the invocation.
+if [ $log = 1 ]
+then
+    echo `date +%F-%R`", smsbk $@" >> $logfile
+fi
+
+case "$#" in
+1)
+    dirname="$1"
+    ;;
+3)
+    dirname="$1"
+    outfile="$3"
+    # [ "$2" = "-o" ] returns 0 if true ("no error").
+    #   if anything other than "-o", returns 1 ("error").
+    [ "$2" = "-o" ] ; argerr=$?
+    ;;
+*)
+    # Set to 1 for error.
+    argerr=1
+    ;;
+esac
+
+if [ !$argerr ]
+then
+    if [ ! -d $dirname ]
+    then
+        errmsg="Error: Directory $dirname does not exist."
+        echo $errmsg
+        argerr=1
+        if [ $log = 1 ]
+        then
+            echo $errmsg >> $logfile
+        fi
+    fi
+    if [ "$outfile" != "" ] && [ -e $outfile ]
+    then
+        errmsg="Error: Output file $outfile already exists."
+        echo $errmsg
+        argerr=1
+        if [ $log = 1 ]
+        then
+            echo $errmsg >> $logfile
+        fi
+    fi
+fi
+
+if [ $argerr = 1 ]
+then
+    echo "Usage: smsbk <dirname> [-o <outfile>]"
+    echo "If 'outfile' not specified, name will be auto-generated"
+    echo "and written to $outputdir."
+    if [ $log = 1 ]
+    then
+        echo "Exiting." >> $logfile
+        echo "-----" >> $logfile
+    fi
+    exit 1
+fi
+
+if [ ! -d $outputtempdir ]
+then
+    errmsg="Error: $outputtempdir does not exist."
+    echo $errmsg
+    if [ $log = 1 ]
+    then
+        echo $errmsg >> $logfile
+        echo "-----" >> $logfile
+    fi
+    exit 1
+fi
+
+# Convert possible relative dirname to absolute.
+workingdir=`pwd`
+dirname=`cd "$dirname"; pwd`
+cd "$workingdir"
+
+# Generate output file name if necessary.
+#   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-dashes>.tar.gz
+if [ "$outfile" = "" ]
+then
+    outfile=$outputtempdir/`date +%F-%H-%M`_SMSBK_`echo $dirname | sed sx/x-xg`.tar.gz
+fi
+
+if [ $log = 1 ]
+then
+    echo "Backing up: $dirname" >> $logfile
+    echo "  Writing output to: $outfile" >> $logfile
+fi
+
+
+#
+# Perform the tar operation
+tar -cpzf $outfile --exclude-tag=$excludetag --directory=/ --exclude=proc --exclude=sys --exclude=/dev/pts --exclude=$outputtempdir --one-file-system $dirname
+tarstatus=$?
+
+#
+# Move from local temp dir to final (networked) location.
+if [ $tarstatus = 0 ]
+then
+    mv $outfile $outputdir
+    if [ $log = 1 ]
+    then
+        echo "Moved $outfile to $outputdir." >> $logfile
+    fi
+fi
+
+
+if [ $log = 1 ]
+then
+    if [ $tarstatus = 0 ]
+    then
+        echo `date +%F-%R`", Exiting normally." >> $logfile
+    else
+        echo `date +%F-%R`", Exiting with error $tarstatus." >> $logfile
+    fi
+    echo "-----" >> $logfile
+fi
+
+exit 0
