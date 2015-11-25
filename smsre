@@ -74,7 +74,7 @@ then
         echo "-----" >> $logfile
     fi
     exit 1
-endif
+fi
 
 # Generate output file name if necessary.
 #   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-dashes>.tar.gz
