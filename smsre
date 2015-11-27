@@ -8,16 +8,15 @@
 # Set default values:
 #   Override with ~/.smsbk/smsbk.conf or /etc/default/smsbk.conf
 outputdir=""
-outputtempdir=""
 excludetag=.smsbk-exclude
 backupsToKeep=5
 logfile=$outputdir/smsbk.log
 log=0
 
 # Override default config values:
-if [ -e ~$USER/.smsbk/smsbk.conf ]
+if [ -e $HOME/.smsbk/smsbk.conf ]
 then
-    source ~$USER/.smsbk/smsbk.conf
+    source $HOME/.smsbk/smsbk.conf
 elif [ -e /etc/default/smsbk.conf ]
 then
     source /etc/default/smsbk.conf
@@ -79,18 +78,6 @@ then
     exit 1
 fi
 
-# Make sure local output temp dir exists
-if [ ! -d $outputtempdir ]
-then
-    errmsg="Error: $outputtempdir does not exist."
-    echo $errmsg
-    if [ $log = 1 ]
-    then
-        echo $errmsg >> $logfile
-        echo "-----" >> $logfile
-    fi
-    exit 1
-fi
 
 # Generate output file name if necessary.
 #   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-dashes>.tar.gz

@@ -11,16 +11,15 @@
 # Set default values:
 #   Override with ~/.smsbk/smsbk.conf or /etc/default/smsbk.conf
 outputdir=""
-outputtempdir=""
 excludetag=.smsbk-exclude
 backupsToKeep=5
 logfile=$outputdir/smsbk.log
 log=0
 
 # Override default config values:
-if [ -e ~$USER/.smsbk/smsbk.conf ]
+if [ -e $HOME/.smsbk/smsbk.conf ]
 then
-    source ~$USER/.smsbk/smsbk.conf
+    source $HOME/.smsbk/smsbk.conf
 elif [ -e /etc/default/smsbk.conf ]
 then
     source /etc/default/smsbk.conf
@@ -38,6 +37,11 @@ if [ $log = 1 ]
 then
     echo "--------" >> $logfile
     echo `date +%F-%R`", smsbk $@" >> $logfile
+    echo "  outputdir=$outputdir" >> $logfile
+    echo "  excludetag=$excludetag" >> $logfile
+    echo "  backupsToKeep=$backupsToKeep" >> $logfile
+    echo "  logfile=$logfile" >> $logfile
+    echo "  log=$log" >> $logfile
 fi
 
 case "$#" in
@@ -93,16 +97,6 @@ then
     exit 1
 fi
 
-if [ ! -d $outputtempdir ]
-then
-    errmsg="Error: $outputtempdir does not exist."
-    echo $errmsg
-    if [ $log = 1 ]
-    then
-        echo "    $errmsg" >> $logfile
-    fi
-    exit 1
-fi
 
 # Convert possible relative dirname to absolute.
 workingdir=`pwd`
@@ -114,7 +108,7 @@ cd "$workingdir"
 if [ "$outfile" = "" ]
 then
     dirnameHyphens=`echo $dirname | sed sx/x-xg`
-    outfile=$outputtempdir/`date +%F-%H-%M`_SMSBK_$dirnameHyphens.tar.gz
+    outfile=$outputdir/`date +%F-%H-%M`_SMSBK_$dirnameHyphens.tar.gz
 fi
 
 if [ $log = 1 ]
@@ -126,19 +120,8 @@ fi
 
 #
 # Perform the tar operation
-tar -cpzf $outfile --exclude-tag=$excludetag --directory=/ --exclude=proc --exclude=sys --exclude=/dev/pts --exclude=$outputtempdir --one-file-system $dirname
+tar -cpzf $outfile --exclude-tag=$excludetag --directory=/ --exclude=proc --exclude=sys --exclude=/dev/pts --exclude=$outputdir --one-file-system $dirname
 tarstatus=$?
-
-#
-# Move from local temp dir to final (networked) location.
-if [ $tarstatus = 0 ]
-then
-    mv $outfile $outputdir
-    if [ $log = 1 ]
-    then
-        echo "    Moved $outfile to $outputdir." >> $logfile
-    fi
-fi
 
 
 #
