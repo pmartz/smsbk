@@ -10,6 +10,7 @@
 outputdir=/mnt/SDrive/pauldeb/backup
 outputtempdir=/smsbktmp
 excludetag=.smsbk-exclude
+backupsToKeep=5
 logfile=$outputdir/smsbk.log
 log=1
 
@@ -21,6 +22,7 @@ outfile=""
 # Log the invocation.
 if [ $log = 1 ]
 then
+    echo "--------" >> $logfile
     echo `date +%F-%R`", smsbk $@" >> $logfile
 fi
 
@@ -60,7 +62,7 @@ then
         argerr=1
         if [ $log = 1 ]
         then
-            echo $errmsg >> $logfile
+            echo "    $errmsg" >> $logfile
         fi
     fi
 fi
@@ -72,8 +74,7 @@ then
     echo "and written to $outputdir."
     if [ $log = 1 ]
     then
-        echo "Exiting." >> $logfile
-        echo "-----" >> $logfile
+        echo "    Exiting." >> $logfile
     fi
     exit 1
 fi
@@ -84,8 +85,7 @@ then
     echo $errmsg
     if [ $log = 1 ]
     then
-        echo $errmsg >> $logfile
-        echo "-----" >> $logfile
+        echo "    $errmsg" >> $logfile
     fi
     exit 1
 fi
@@ -96,16 +96,17 @@ dirname=`cd "$dirname"; pwd`
 cd "$workingdir"
 
 # Generate output file name if necessary.
-#   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-dashes>.tar.gz
+#   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-hyphens>.tar.gz
 if [ "$outfile" = "" ]
 then
-    outfile=$outputtempdir/`date +%F-%H-%M`_SMSBK_`echo $dirname | sed sx/x-xg`.tar.gz
+    dirnameHyphens=`echo $dirname | sed sx/x-xg`
+    outfile=$outputtempdir/`date +%F-%H-%M`_SMSBK_$dirnameHyphens.tar.gz
 fi
 
 if [ $log = 1 ]
 then
-    echo "Backing up: $dirname" >> $logfile
-    echo "  Writing output to: $outfile" >> $logfile
+    echo "    Backing up: $dirname" >> $logfile
+    echo "    Writing output to: $outfile" >> $logfile
 fi
 
 
@@ -121,9 +122,24 @@ then
     mv $outfile $outputdir
     if [ $log = 1 ]
     then
-        echo "Moved $outfile to $outputdir." >> $logfile
+        echo "    Moved $outfile to $outputdir." >> $logfile
     fi
 fi
+
+
+#
+# Remove old files
+numBackups=`ls -l $outputdir/*_SMSBK_$dirnameHyphens.tar.gz | wc -l`
+while [ "$numBackups" -gt "$backupsToKeep" ]
+do
+    targetfile=`ls -t1 $outputdir/*_SMSBK_$dirnameHyphens.tar.gz | tail -1`
+    if [ $log = 1 ]
+    then
+        echo "    Removing $targetfile" >> $logfile
+    fi
+    rm -f $targetfile
+    numBackups=`ls -l $outputdir/*_SMSBK_$dirnameHyphens.tar.gz | wc -l`
+done
 
 
 if [ $log = 1 ]
@@ -134,7 +150,6 @@ then
     else
         echo `date +%F-%R`", Exiting with error $tarstatus." >> $logfile
     fi
-    echo "-----" >> $logfile
 fi
 
 exit 0
