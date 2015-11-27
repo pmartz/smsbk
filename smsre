@@ -31,6 +31,7 @@ outdir=""
 # Log the invocation.
 if [ $log = 1 ]
 then
+    echo "--------" >> $logfile
     echo `date +%F-%R`", smsre $@" >> $logfile
 fi
 
@@ -60,7 +61,7 @@ then
         argerr=1
         if [ $log = 1 ]
         then
-            echo $errmsg >> $logfile
+            echo "    $errmsg" >> $logfile
         fi
     fi
 fi
@@ -73,78 +74,83 @@ then
     if [ $log = 1 ]
     then
         echo "Exiting." >> $logfile
-        echo "-----" >> $logfile
     fi
     exit 1
 fi
 
 
-# Generate output file name if necessary.
-#   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-dashes>.tar.gz
-if [ "$outdir" = "" ]
-then
-    # Get rid of path
-    nameonly=`basename $filename`
+## # Generate output file name if necessary.
+## #   __<dirname-with-hyphens>_SMSBK_YYYY-MM-DD-HHMM.tar.gz
+## if [ "$outdir" = "" ]
+## then
+##     # Get rid of path
+##     nameonly=`basename $filename`
+## 
+##     # Assume $nameonly contains original path with '-' instead of '/'
+##     #
+##     # First, extract that hyphenated path from the file name.
+##     #
+##     # Regular expression:
+##     #   Match ^__ (start of line and the string "__")
+##     #         \([^\.]*\) (any characters other than periods and assign to \1)
+##     #         _SMSBK_ (the string "_SMSBK_")
+##     #         [-0-9]* (all numbers and hyphens (date and time)
+##     #         .tar.gz$ (the string ".tar.gz" at end of line)
+##     tempdir=`echo $nameonly | sed 's/^__\([^\.]*\)_SMSBK_[-0-9]*.tar.gz$/\1/'`
+##     sedresult=$?
+## 
+##     if [ $sedresult = 0 ]
+##     then
+##         # Now, replace '-' with '/'
+##         outdir=`echo $tempdir | sed sx-x/xg`
+##         sedresult=$?
+##     fi
+## 
+##     if [ $sedresult != 0 ]
+##     then
+##         warnmsg="Warning: Could not determine output directory from filename. Using cwd."
+##         echo $warnmsg
+##         if [ $log = 1 ]
+##         then
+##             echo "    $warnmsg" >> $logfile
+##         fi
+##         outdir="."
+##     fi
+## fi
 
-    # Assume $nameonly contains original path with '-' instead of '/'
-    #
-    # First, extract that hyphenated path from the file name.
-    #
-    # Regular expression:
-    #   Match ^ (start of line), [-0-9]* (all numbers and hyphens; date and
-    #   time), _SMSBK_ (the string "_SMSBK_"), \([^\.]*\) (any characters
-    #   other than periods and assign to \1), .*$ (all subsequent characters
-    #   including end of line anchor.
-    tempdir=`echo $nameonly | sed 's/^[-0-9]*_SMSBK_\([^\.]*\).*$/\1/'`
-    sedresult=$?
-
-    if [ $sedresult = 0 ]
-    then
-        # Now, replace '-' with '/'
-        outdir=`echo $tempdir | sed sx-x/xg`
-        sedresult=$?
-    fi
-
-    if [ $sedresult != 0 ]
-    then
-        warnmsg="Warning: Could not determine output directory from filename. Using cwd."
-        echo $warnmsg
-        if [ $log = 1 ]
-        then
-            echo $warnmsg >> $logfile
-        fi
-        outdir="."
-    fi
-fi
-
-if [ ! -d $outdir ]
+if [ "$outdir" != "" ] &&
+   [ ! -d $outdir ]
 then
     errmsg="Error: Output directory $outdir does not exist. Create it first."
     echo $errmsg
     if [ $log = 1 ]
     then
-        echo $errmsg >> $logfile
-        echo "-----" >> $logfile
+        echo "    $errmsg" >> $logfile
     fi
     exit 1
 fi
 
-# Copy backup file to local temp directory
-cp $filename $outputtempdir
-localfile=$outputtempdir/`basename $filename`
-
-if [ $log = 1 ]
+if [ "$outdir" = "" ]
 then
-    echo "Restoring: $filename" >> $logfile
-    echo "  Using temp location $localfile" >> $logfile
-    echo "  Writing output to: $outdir" >> $logfile
+    tarcmd="tar -xpzf $filename --directory=/ --keep-newer-files"
+else
+    tarcmd="tar -xpzf $filename --directory=/ --keep-newer-files -C $outdir"
 fi
 
 
-# Perform the tar operation
-tar -xpzf $localfile --keep-newer-files -C $outdir
+if [ $log = 1 ]
+then
+    echo "    Restoring: $filename" >> $logfile
+    echo "    Writing output to: $outdir" >> $logfile
+    echo "    tar command =" >> $logfile
+    echo "      $tarcmd" >> $logfile
+fi
+
+
+# Issue the tar command
+$tarcmd
 tarstatus=$?
-rm $localfile
+
 
 if [ $log = 1 ]
 then
@@ -154,7 +160,6 @@ then
     else
         echo `date +%F-%R`", Exiting with error $tarstatus." >> $logfile
     fi
-    echo "-----" >> $logfile
 fi
 
 exit 0

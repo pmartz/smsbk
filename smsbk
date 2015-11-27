@@ -37,11 +37,11 @@ if [ $log = 1 ]
 then
     echo "--------" >> $logfile
     echo `date +%F-%R`", smsbk $@" >> $logfile
-    echo "  outputdir=$outputdir" >> $logfile
-    echo "  excludetag=$excludetag" >> $logfile
-    echo "  backupsToKeep=$backupsToKeep" >> $logfile
-    echo "  logfile=$logfile" >> $logfile
-    echo "  log=$log" >> $logfile
+    echo "      outputdir=$outputdir" >> $logfile
+    echo "      excludetag=$excludetag" >> $logfile
+    echo "      backupsToKeep=$backupsToKeep" >> $logfile
+    echo "      logfile=$logfile" >> $logfile
+    echo "      log=$log" >> $logfile
 fi
 
 case "$#" in
@@ -104,38 +104,52 @@ dirname=`cd "$dirname"; pwd`
 cd "$workingdir"
 
 # Generate output file name if necessary.
-#   YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-hyphens>.tar.gz
+#   __<dirname-with-hyphens>_SMSBK_YYYY-MM-DD-HHMM.tar.gz
+#     (Old format: YYYY-MM-DD-HH-MM_SMSBK_<dirname-with-hyphens>.tar.gz)
 if [ "$outfile" = "" ]
 then
-    dirnameHyphens=`echo $dirname | sed sx/x-xg`
-    outfile=$outputdir/`date +%F-%H-%M`_SMSBK_$dirnameHyphens.tar.gz
+    dirnameHyphens=`( echo $dirname | sed sx/x-xg )`
+    outfile="$outputdir/__`echo $dirnameHyphens`_SMSBK_`date +%F-%H%M`.tar.gz"
 fi
 
+
+# Create the tar command.
+tarcmd="tar -cpzf $outfile --directory=/ \
+ --exclude-tag=$excludetag \
+ --exclude=proc --exclude=sys --exclude=/dev/pts \
+ --exclude=$outputdir --one-file-system \
+ $dirname"
+
+
+# Log what we're about to do.
 if [ $log = 1 ]
 then
     echo "    Backing up: $dirname" >> $logfile
     echo "    Writing output to: $outfile" >> $logfile
+    echo "    tar command =" >> $logfile
+    echo "      $tarcmd" >> $logfile
 fi
 
 
 #
-# Perform the tar operation
-tar -cpzf $outfile --exclude-tag=$excludetag --directory=/ --exclude=proc --exclude=sys --exclude=/dev/pts --exclude=$outputdir --one-file-system $dirname
+# Issue the tar command.
+$tarcmd
 tarstatus=$?
 
 
 #
 # Remove old files
-numBackups=`ls -l $outputdir/*_SMSBK_$dirnameHyphens.tar.gz | wc -l`
+fileglob=$outputdir/__$dirnameHyphens_SMSBK_*.tar.gz
+numBackups=`ls -l $fileglob | wc -l`
 while [ "$numBackups" -gt "$backupsToKeep" ]
 do
-    targetfile=`ls -t1 $outputdir/*_SMSBK_$dirnameHyphens.tar.gz | tail -1`
+    targetfile=`ls -t1 $fileglob | tail -1`
     if [ $log = 1 ]
     then
         echo "    Removing $targetfile" >> $logfile
     fi
     rm -f $targetfile
-    numBackups=`ls -l $outputdir/*_SMSBK_$dirnameHyphens.tar.gz | wc -l`
+    numBackups=`ls -l $fileglob | wc -l`
 done
 
 
