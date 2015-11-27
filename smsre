@@ -2,11 +2,27 @@
 
 # smsre <filename> [-o <outdir>]
 
-# Config variables:
-outputdir=/mnt/SDrive/pauldeb/backup
-outputtempdir=/smsbktmp
+
+#
+# Configuration.
+# Set default values:
+#   Override with ~/.smsbk/smsbk.conf or /etc/default/smsbk.conf
+outputdir=""
+outputtempdir=""
+excludetag=.smsbk-exclude
+backupsToKeep=5
 logfile=$outputdir/smsbk.log
-log=1
+log=0
+
+# Override default config values:
+if [ -e ~$USER/.smsbk/smsbk.conf ]
+then
+    source ~$USER/.smsbk/smsbk.conf
+elif [ -e /etc/default/smsbk.conf ]
+then
+    source /etc/default/smsbk.conf
+fi
+
 
 # Using 0 for false - no error
 argerr=0
