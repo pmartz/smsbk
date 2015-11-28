@@ -18,7 +18,7 @@ else
     cp ./smsre $EXEDIR
     gzip -c ./smsbk.1 > $MANDIR/smsbk.1.gz
     gzip -c ./smsre.1 > $MANDIR/smsre.1.gz
-    cp ./smsbk.conf $CONFDIR
+    cp -n ./smsbk.conf $CONFDIR
 
     chown 0.0 $EXEDIR/smsbk $EXEDIR/smsbk $MANDIR/smsbk.1.gz $MANDIR/smsre.1.gz $CONFDIR/smsbk.conf
     chmod 755 $EXEDIR/smsbk $EXEDIR/smsbk
