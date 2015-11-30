@@ -139,7 +139,7 @@ tarstatus=$?
 
 #
 # Remove old files
-fileglob=$outputdir/__$dirnameHyphens_SMSBK_*.tar.gz
+fileglob="$outputdir/__"`echo $dirnameHyphens`"_SMSBK_*.tar.gz"
 numBackups=`ls -l $fileglob | wc -l`
 while [ "$numBackups" -gt "$backupsToKeep" ]
 do
