@@ -3,8 +3,29 @@
 #
 # smsbk <dirname> [-o <outfile>]
 #
-# To exclude a subdirectory, add the file .smsbk-exclude to that directory.
+
 #
+# Termination function. Sends text message if requested,
+# logs status to logfile if requested, and exits.
+exitStatus=0
+function smsbkterm ()
+{
+    # Log, if necessary
+    if [ $log = 1 ]
+    then
+        echo "$exitMessage" >> $logfile
+    fi
+
+    # Send text message
+    if [ -e /usr/bin/curl ] &&
+       [ "$smsnumber" != "" ]
+    then
+        txtmsg="smsbk for $dirname: $exitMessage"
+        curl http://textbelt.com/text -d number=$smsnumber -d "message=$txtmsg"
+    fi
+
+    exit $exitStatus
+}
 
 #
 # Configuration.
@@ -15,6 +36,7 @@ excludetag=.smsbk-exclude
 backupsToKeep=5
 logfile=$outputdir/smsbk.log
 log=0
+smsnumber=""
 
 # Override default config values:
 if [ -e $HOME/.smsbk/smsbk.conf ]
@@ -90,11 +112,9 @@ then
     echo "Usage: smsbk <dirname> [-o <outfile>]"
     echo "If 'outfile' not specified, name will be auto-generated"
     echo "and written to $outputdir."
-    if [ $log = 1 ]
-    then
-        echo "    Exiting." >> $logfile
-    fi
-    exit 1
+    exitStatus=1
+    exitMessage=`date +%F-%R`", Exiting, argument error."
+    smsbkterm
 fi
 
 
@@ -153,14 +173,12 @@ do
 done
 
 
-if [ $log = 1 ]
+if [ $tarstatus = 0 ]
 then
-    if [ $tarstatus = 0 ]
-    then
-        echo `date +%F-%R`", Exiting normally." >> $logfile
-    else
-        echo `date +%F-%R`", Exiting with error $tarstatus." >> $logfile
-    fi
+    exitMessage=`date +%F-%R`", Exiting, success."
+else
+    exitMessage=`date +%F-%R`", Exiting, tar error $tarstatus."
 fi
 
-exit 0
+exitStatus=$tarstatus
+smsbkterm
