@@ -58,7 +58,7 @@ outfile=""
 if [ $log = 1 ]
 then
     echo "--------" >> $logfile
-    echo `date +%F-%R`", smsbk $@" >> $logfile
+    echo `date +%c`", smsbk $@" >> $logfile
     echo "      outputdir=$outputdir" >> $logfile
     echo "      excludetag=$excludetag" >> $logfile
     echo "      backupsToKeep=$backupsToKeep" >> $logfile
@@ -113,7 +113,7 @@ then
     echo "If 'outfile' not specified, name will be auto-generated"
     echo "and written to $outputdir."
     exitStatus=1
-    exitMessage=`date +%F-%R`", Exiting, argument error."
+    exitMessage=`date +%c`", status: argument error."
     smsbkterm
 fi
 
@@ -175,9 +175,9 @@ done
 
 if [ $tarstatus = 0 ]
 then
-    exitMessage=`date +%F-%R`", Exiting, success."
+    exitMessage=`date +%c`", status: success."
 else
-    exitMessage=`date +%F-%R`", Exiting, tar error $tarstatus."
+    exitMessage=`date +%c`", status: tar error=$tarstatus."
 fi
 
 exitStatus=$tarstatus
